@@ -179,4 +179,74 @@ class PetControllerTest {
                 .andExpect(view().name("pets/createOrUpdatePetForm"))
                 .andExpect(model().attributeHasFieldErrors("pet", "name"));
     }
+
+    @Test
+    @DisplayName("POST /owners/{ownerId}/pets/{petId}/edit - Should reject when birth date is in future")
+    void postEditPet_shouldReject_whenBirthDateInFuture() throws Exception {
+        // Arrange
+        Integer ownerId = testOwner.getId();
+
+        // Create and save a pet
+        Pet pet = new Pet();
+        pet.setName("Michi");
+        pet.setType(catType);
+        pet.setBirthDate(LocalDate.of(2020, 1, 1));
+        testOwner.addPet(pet);
+        testOwner = ownerRepository.save(testOwner);
+
+        Pet savedPet = testOwner.getPet("Michi", false);
+        Integer petId = savedPet.getId();
+
+        LocalDate future = LocalDate.now().plusDays(5);
+
+        // Act
+        var result = mockMvc.perform(post("/owners/{ownerId}/pets/{petId}/edit", ownerId, petId)
+                        .param("id", String.valueOf(petId))
+                        .param("name", "Michi")
+                        .param("birthDate", future.toString())
+                        .param("type", "cat"));
+
+        // Assert
+        result.andExpect(status().isOk())
+                .andExpect(view().name("pets/createOrUpdatePetForm"))
+                .andExpect(model().attributeHasFieldErrors("pet", "birthDate"));
+    }
+
+    @Test
+    @DisplayName("POST /owners/{ownerId}/pets/{petId}/edit - Should update pet successfully and redirect when valid")
+    void postEditPet_shouldUpdateAndRedirect_whenValid() throws Exception {
+        // Arrange
+        Integer ownerId = testOwner.getId();
+
+        // Create and save a pet
+        Pet pet = new Pet();
+        pet.setName("Michi");
+        pet.setType(catType);
+        pet.setBirthDate(LocalDate.of(2020, 1, 1));
+        testOwner.addPet(pet);
+        testOwner = ownerRepository.save(testOwner);
+
+        Pet savedPet = testOwner.getPet("Michi", false);
+        Integer petId = savedPet.getId();
+
+        // Act - Update pet with new name, birthdate, and type
+        var result = mockMvc.perform(post("/owners/{ownerId}/pets/{petId}/edit", ownerId, petId)
+                        .param("id", String.valueOf(petId))
+                        .param("name", "Fluffy")
+                        .param("birthDate", "2019-06-15")
+                        .param("type", "dog"));
+
+        // Assert
+        result.andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/owners/" + ownerId));
+
+        // Verify pet was updated
+        Owner updatedOwner = ownerRepository.findById(ownerId).orElse(null);
+        assertNotNull(updatedOwner);
+        Pet updatedPet = updatedOwner.getPet(petId);
+        assertNotNull(updatedPet);
+        assertEquals("Fluffy", updatedPet.getName());
+        assertEquals(LocalDate.of(2019, 6, 15), updatedPet.getBirthDate());
+        assertEquals("dog", updatedPet.getType().getName());
+    }
 }
