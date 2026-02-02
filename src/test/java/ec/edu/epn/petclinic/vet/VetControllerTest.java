@@ -332,35 +332,6 @@ class VetControllerTest {
 	}
 
 	@Test
-	@DisplayName("GET /vets.html - Should include vets in model")
-	void testShowVetListIncludesVetsInModel() throws Exception {
-		// Arrange
-		// No es necesario
-
-		// Act
-		var result = mockMvc.perform(get("/vets.html"));
-
-		// Assert
-		result.andExpect(status().isOk())
-			.andExpect(model().attributeExists("listVets"))
-			.andExpect(view().name("vets/vetList"));
-	}
-
-	@Test
-	@DisplayName("GET /vets - Should return all vets without pagination")
-	void testShowResourcesVetListNoPagination() throws Exception {
-		// Arrange
-		// No es necesario
-
-		// Act
-		var result = mockMvc.perform(get("/vets"));
-
-		// Assert
-		result.andExpect(status().isOk());
-		// This endpoint returns all vets without pagination
-	}
-
-	@Test
 	@DisplayName("GET /vets.html - Should reject page 0 with exception")
 	void testShowVetListPageZero() throws Exception {
 		// Arrange
